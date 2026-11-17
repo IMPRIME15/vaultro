@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">VAULTORA</string>
+    <string name="tagline">Personal Digital Vault</string>
+    <string name="purchase_vault">Purchase Vault</string>
+    <string name="medicine_vault">Medicine Vault</string>
+    <string name="medicine_disclaimer">Storage &amp; expiry tracking only. Not for medical diagnosis, treatment, or dosage advice.</string>
+</resources>

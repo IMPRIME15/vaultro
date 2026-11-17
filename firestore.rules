@@ -1,0 +1,513 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function familyDoc(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)).data;
+    }
+
+    function isFamilyMember(familyId) {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/families/$(familyId)) &&
+             (request.auth.uid in familyDoc(familyId).memberUids);
+    }
+
+    function isFamilyAdmin(familyId) {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/families/$(familyId)) &&
+             familyDoc(familyId).adminUid == request.auth.uid;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 100 &&
+             data.email is string && data.email.size() >= 1 && data.email.size() <= 200 &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1000)) &&
+             data.themePreference in ['DARK', 'LIGHT', 'SYSTEM'] &&
+             data.purchaseRemindersEnabled is bool &&
+             data.medicineRemindersEnabled is bool &&
+             data.returnReminderDaysBefore is int && data.returnReminderDaysBefore >= 1 && data.returnReminderDaysBefore <= 30 &&
+             data.warrantyReminderDaysBefore is int && data.warrantyReminderDaysBefore >= 1 && data.warrantyReminderDaysBefore <= 90 &&
+             data.medicineReminderDaysBefore is int && data.medicineReminderDaysBefore >= 1 && data.medicineReminderDaysBefore <= 90 &&
+             data.appLockEnabled is bool &&
+             data.seededSampleData is bool &&
+             (!('priorityCriticalAlertsEnabled' in data) || data.priorityCriticalAlertsEnabled is bool) &&
+             (!('priorityHighAlertsEnabled' in data) || data.priorityHighAlertsEnabled is bool) &&
+             (!('priorityMediumDigestEnabled' in data) || data.priorityMediumDigestEnabled is bool) &&
+             (!('priorityLowMuted' in data) || data.priorityLowMuted is bool) &&
+             (!('familyId' in data) || (data.familyId is string && data.familyId.size() >= 1 && data.familyId.size() <= 128)) &&
+             (!('familyRole' in data) || (data.familyRole in ['ADMIN', 'MEMBER'])) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPurchase(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 150 &&
+             (!('brand' in data) || (data.brand is string && data.brand.size() <= 80)) &&
+             data.merchantName is string && data.merchantName.size() >= 1 && data.merchantName.size() <= 120 &&
+             (data.purchasePriceInr is float || data.purchasePriceInr is int) && data.purchasePriceInr >= 0 && data.purchasePriceInr <= 100000000 &&
+             data.purchaseDateMillis is int && data.purchaseDateMillis > 0 &&
+             data.invoiceNumber is string && data.invoiceNumber.size() <= 80 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+             (!('attachmentUri' in data) || (data.attachmentUri is string && data.attachmentUri.size() <= 1000)) &&
+             data.attachmentType in ['NONE', 'IMAGE', 'PDF'] &&
+             (!('returnDeadlineMillis' in data) || (data.returnDeadlineMillis is int && data.returnDeadlineMillis > 0)) &&
+             (!('warrantyDurationMonths' in data) || (data.warrantyDurationMonths is int && data.warrantyDurationMonths >= 0 && data.warrantyDurationMonths <= 240)) &&
+             (!('warrantyExpiryMillis' in data) || (data.warrantyExpiryMillis is int && data.warrantyExpiryMillis > 0)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.returnReminderSet is bool &&
+             data.warrantyReminderSet is bool &&
+             (!('importanceLevel' in data) || (data.importanceLevel is string && data.importanceLevel in ['', 'AUTO', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'])) &&
+             (!('completed' in data) || data.completed is bool) &&
+             (!('completedAtMillis' in data) || (data.completedAtMillis is int && data.completedAtMillis > 0)) &&
+             (!('warrantyClaimActive' in data) || data.warrantyClaimActive is bool) &&
+             (!('warrantyClaimFollowUpMillis' in data) || (data.warrantyClaimFollowUpMillis is int && data.warrantyClaimFollowUpMillis > 0)) &&
+             (!('claimStatus' in data) || (data.claimStatus in ['NOT_SUBMITTED', 'SUBMITTED', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED'])) &&
+             (!('claimNotes' in data) || (data.claimNotes is string && data.claimNotes.size() <= 1000)) &&
+             (!('claimIssueSummary' in data) || (data.claimIssueSummary is string && data.claimIssueSummary.size() <= 600)) &&
+             (!('claimUpdatedAtMillis' in data) || (data.claimUpdatedAtMillis is int && data.claimUpdatedAtMillis > 0)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMedicine(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.medicineName is string && data.medicineName.size() >= 1 && data.medicineName.size() <= 150 &&
+             data.batchNumber is string && data.batchNumber.size() <= 80 &&
+             data.expiryDateMillis is int && data.expiryDateMillis > 0 &&
+             (!('purchaseDateMillis' in data) || (data.purchaseDateMillis is int && data.purchaseDateMillis > 0)) &&
+             (!('quantity' in data) || (data.quantity is string && data.quantity.size() <= 80)) &&
+             (!('photoUri' in data) || (data.photoUri is string && data.photoUri.size() <= 1000)) &&
+             (!('storageNote' in data) || (data.storageNote is string && data.storageNote.size() <= 250)) &&
+             data.reminderEnabled is bool &&
+             data.reminderDaysBefore is int && data.reminderDaysBefore >= 1 && data.reminderDaysBefore <= 90 &&
+             (!('importanceLevel' in data) || (data.importanceLevel is string && data.importanceLevel in ['', 'AUTO', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'])) &&
+             (!('completed' in data) || data.completed is bool) &&
+             (!('completedAtMillis' in data) || (data.completedAtMillis is int && data.completedAtMillis > 0)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidNotificationState(data, userId, alertKey) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.alertKey is string &&
+             data.alertKey == alertKey &&
+             data.alertKey.size() >= 1 && data.alertKey.size() <= 128 &&
+             data.readFlag is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFamilyMember(data, familyId, memberUid) {
+      return data.familyId == familyId &&
+             data.userId == memberUid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             data.email is string && data.email.size() >= 1 && data.email.size() <= 200 &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1000)) &&
+             data.role in ['ADMIN', 'MEMBER'] &&
+             data.inviteCodeUsed is string && data.inviteCodeUsed.size() >= 4 && data.inviteCodeUsed.size() <= 32 &&
+             data.joinedAtMillis is int && data.joinedAtMillis > 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSharedRecord(data, familyId) {
+      return data.familyId == familyId &&
+             data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 100 &&
+             data.recordType in ['PURCHASE', 'MEDICINE'] &&
+             data.sourceRecordId is string && data.sourceRecordId.size() >= 1 && data.sourceRecordId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 150 &&
+             data.brand is string && data.brand.size() <= 80 &&
+             data.merchantOrBatch is string && data.merchantOrBatch.size() <= 120 &&
+             data.category is string && data.category.size() <= 60 &&
+             (!('priceInr' in data) || ((data.priceInr is float || data.priceInr is int) && data.priceInr >= 0 && data.priceInr <= 100000000)) &&
+             (!('purchaseDateMillis' in data) || (data.purchaseDateMillis is int && data.purchaseDateMillis > 0)) &&
+             (!('returnDeadlineMillis' in data) || (data.returnDeadlineMillis is int && data.returnDeadlineMillis > 0)) &&
+             (!('warrantyDurationMonths' in data) || (data.warrantyDurationMonths is int && data.warrantyDurationMonths >= 0 && data.warrantyDurationMonths <= 240)) &&
+             (!('warrantyExpiryMillis' in data) || (data.warrantyExpiryMillis is int && data.warrantyExpiryMillis > 0)) &&
+             (!('medicineExpiryMillis' in data) || (data.medicineExpiryMillis is int && data.medicineExpiryMillis > 0)) &&
+             (!('quantity' in data) || (data.quantity is string && data.quantity.size() <= 80)) &&
+             (!('storageNote' in data) || (data.storageNote is string && data.storageNote.size() <= 250)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.invoiceNumber is string && data.invoiceNumber.size() <= 80 &&
+             data.importanceLevel is string && data.importanceLevel in ['', 'AUTO', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] &&
+             data.claimStatus in ['NOT_SUBMITTED', 'SUBMITTED', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED'] &&
+             data.sharedAtMillis is int && data.sharedAtMillis > 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'fullName', 'email', 'themePreference',
+                         'purchaseRemindersEnabled', 'medicineRemindersEnabled',
+                         'returnReminderDaysBefore', 'warrantyReminderDaysBefore',
+                         'medicineReminderDaysBefore', 'appLockEnabled', 'seededSampleData',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'fullName', 'email', 'photoUrl', 'themePreference',
+                         'purchaseRemindersEnabled', 'medicineRemindersEnabled',
+                         'returnReminderDaysBefore', 'warrantyReminderDaysBefore',
+                         'medicineReminderDaysBefore', 'appLockEnabled', 'seededSampleData',
+                         'priorityCriticalAlertsEnabled', 'priorityHighAlertsEnabled',
+                         'priorityMediumDigestEnabled', 'priorityLowMuted',
+                         'familyId', 'familyRole',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'fullName', 'email', 'photoUrl', 'themePreference',
+                         'purchaseRemindersEnabled', 'medicineRemindersEnabled',
+                         'returnReminderDaysBefore', 'warrantyReminderDaysBefore',
+                         'medicineReminderDaysBefore', 'appLockEnabled', 'seededSampleData',
+                         'priorityCriticalAlertsEnabled', 'priorityHighAlertsEnabled',
+                         'priorityMediumDigestEnabled', 'priorityLowMuted',
+                         'familyId', 'familyRole',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /purchases/{purchaseId} {
+        allow get: if isOwner(userId) && isValidId(purchaseId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(purchaseId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'productName', 'merchantName', 'purchasePriceInr',
+                           'purchaseDateMillis', 'invoiceNumber', 'category',
+                           'attachmentType', 'returnReminderSet', 'warrantyReminderSet',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'productName', 'brand', 'merchantName', 'purchasePriceInr',
+                           'purchaseDateMillis', 'invoiceNumber', 'category',
+                           'attachmentUri', 'attachmentType', 'returnDeadlineMillis',
+                           'warrantyDurationMonths', 'warrantyExpiryMillis', 'notes',
+                           'returnReminderSet', 'warrantyReminderSet',
+                           'importanceLevel', 'completed', 'completedAtMillis',
+                           'warrantyClaimActive', 'warrantyClaimFollowUpMillis',
+                           'claimStatus', 'claimNotes', 'claimIssueSummary', 'claimUpdatedAtMillis',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidPurchase(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(purchaseId) &&
+                         isValidPurchase(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'productName', 'brand', 'merchantName', 'purchasePriceInr',
+                           'purchaseDateMillis', 'invoiceNumber', 'category',
+                           'attachmentUri', 'attachmentType', 'returnDeadlineMillis',
+                           'warrantyDurationMonths', 'warrantyExpiryMillis', 'notes',
+                           'returnReminderSet', 'warrantyReminderSet',
+                           'importanceLevel', 'completed', 'completedAtMillis',
+                           'warrantyClaimActive', 'warrantyClaimFollowUpMillis',
+                           'claimStatus', 'claimNotes', 'claimIssueSummary', 'claimUpdatedAtMillis',
+                           'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(purchaseId);
+      }
+
+      match /medicines/{medicineId} {
+        allow get: if isOwner(userId) && isValidId(medicineId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(medicineId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'medicineName', 'batchNumber', 'expiryDateMillis',
+                           'reminderEnabled', 'reminderDaysBefore', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'medicineName', 'batchNumber', 'expiryDateMillis',
+                           'purchaseDateMillis', 'quantity', 'photoUri', 'storageNote',
+                           'reminderEnabled', 'reminderDaysBefore',
+                           'importanceLevel', 'completed', 'completedAtMillis',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidMedicine(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(medicineId) &&
+                         isValidMedicine(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'medicineName', 'batchNumber', 'expiryDateMillis',
+                           'purchaseDateMillis', 'quantity', 'photoUri', 'storageNote',
+                           'reminderEnabled', 'reminderDaysBefore',
+                           'importanceLevel', 'completed', 'completedAtMillis',
+                           'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(medicineId);
+      }
+
+      match /notificationStates/{alertKey} {
+        allow get: if isOwner(userId) && isValidId(alertKey);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(alertKey) &&
+                         incoming().keys().hasAll([
+                           'userId', 'alertKey', 'readFlag', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'alertKey', 'readFlag', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidNotificationState(incoming(), userId, alertKey);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(alertKey) &&
+                         isValidNotificationState(incoming(), userId, alertKey) &&
+                         incoming().userId == existing().userId &&
+                         incoming().alertKey == existing().alertKey &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'readFlag', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(alertKey);
+      }
+    }
+
+    match /familyInvites/{inviteCode} {
+      // Anyone authenticated can resolve a specific code by exact ID; listing all codes is forbidden.
+      allow get: if isSignedIn() && isValidId(inviteCode);
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+                       isValidId(inviteCode) &&
+                       incoming().keys().hasAll([
+                         'inviteCode', 'familyId', 'familyName', 'createdByUid',
+                         'active', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'inviteCode', 'familyId', 'familyName', 'createdByUid',
+                         'active', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().inviteCode == inviteCode &&
+                       incoming().createdByUid == request.auth.uid &&
+                       isValidId(incoming().familyId) &&
+                       incoming().familyName is string && incoming().familyName.size() >= 1 && incoming().familyName.size() <= 80 &&
+                       incoming().active is bool &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isFamilyAdmin(incoming().familyId);
+
+      allow update: if isSignedIn() &&
+                       isValidId(inviteCode) &&
+                       existing().createdByUid == request.auth.uid &&
+                       incoming().createdByUid == existing().createdByUid &&
+                       incoming().familyId == existing().familyId &&
+                       incoming().inviteCode == existing().inviteCode &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['active', 'familyName', 'updatedAt']) &&
+                       incoming().active is bool &&
+                       incoming().familyName is string && incoming().familyName.size() >= 1 && incoming().familyName.size() <= 80;
+
+      allow delete: if isSignedIn() &&
+                       isValidId(inviteCode) &&
+                       existing().createdByUid == request.auth.uid;
+    }
+
+    match /families/{familyId} {
+      allow get: if isSignedIn() &&
+                    isValidId(familyId) &&
+                    ((request.auth.uid in existing().memberUids) || existing().adminUid == request.auth.uid);
+
+      allow list: if isSignedIn() && (request.auth.uid in existing().memberUids);
+
+      allow create: if isSignedIn() &&
+                       isValidId(familyId) &&
+                       incoming().keys().hasAll([
+                         'name', 'adminUid', 'inviteCode', 'memberUids', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'name', 'adminUid', 'inviteCode', 'memberUids', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().adminUid == request.auth.uid &&
+                       incoming().name is string && incoming().name.size() >= 1 && incoming().name.size() <= 80 &&
+                       incoming().inviteCode is string && incoming().inviteCode.size() >= 4 && incoming().inviteCode.size() <= 32 &&
+                       incoming().memberUids is list &&
+                       incoming().memberUids.size() == 1 &&
+                       incoming().memberUids[0] == request.auth.uid &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+
+      allow update: if isSignedIn() &&
+                       isValidId(familyId) &&
+                       incoming().adminUid == existing().adminUid &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().memberUids is list &&
+                       incoming().memberUids.size() >= 1 && incoming().memberUids.size() <= 25 &&
+                       existing().adminUid in incoming().memberUids &&
+                       (
+                         // Case 1: Admin manages name, inviteCode, or removes non-admin memberUids
+                         (
+                           existing().adminUid == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'inviteCode', 'memberUids', 'updatedAt']) &&
+                           incoming().name is string && incoming().name.size() >= 1 && incoming().name.size() <= 80 &&
+                           incoming().inviteCode is string && incoming().inviteCode.size() >= 4 && incoming().inviteCode.size() <= 32
+                         ) ||
+                         // Case 2: User joins via valid active inviteCode matching this family
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['memberUids', 'updatedAt']) &&
+                           !(request.auth.uid in existing().memberUids) &&
+                           (request.auth.uid in incoming().memberUids) &&
+                           incoming().memberUids.hasAll(existing().memberUids) &&
+                           incoming().memberUids.size() == existing().memberUids.size() + 1 &&
+                           exists(/databases/$(database)/documents/familyInvites/$(existing().inviteCode)) &&
+                           get(/databases/$(database)/documents/familyInvites/$(existing().inviteCode)).data.active == true &&
+                           get(/databases/$(database)/documents/familyInvites/$(existing().inviteCode)).data.familyId == familyId
+                         ) ||
+                         // Case 3: Non-admin member removes self from family
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['memberUids', 'updatedAt']) &&
+                           (request.auth.uid in existing().memberUids) &&
+                           request.auth.uid != existing().adminUid &&
+                           !(request.auth.uid in incoming().memberUids) &&
+                           existing().memberUids.hasAll(incoming().memberUids) &&
+                           incoming().memberUids.size() == existing().memberUids.size() - 1
+                         )
+                       );
+
+      allow delete: if isSignedIn() &&
+                       isValidId(familyId) &&
+                       existing().adminUid == request.auth.uid;
+
+      match /members/{memberUid} {
+        allow get, list: if isValidId(familyId) && isFamilyMember(familyId);
+
+        allow create: if isValidId(familyId) &&
+                         isValidId(memberUid) &&
+                         isOwner(memberUid) &&
+                         isFamilyMember(familyId) &&
+                         incoming().keys().hasAll([
+                           'familyId', 'userId', 'displayName', 'email', 'role',
+                           'inviteCodeUsed', 'joinedAtMillis', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'familyId', 'userId', 'displayName', 'email', 'photoUrl', 'role',
+                           'inviteCodeUsed', 'joinedAtMillis', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidFamilyMember(incoming(), familyId, memberUid) &&
+                         (
+                           (isFamilyAdmin(familyId) && incoming().role == 'ADMIN') ||
+                           (!isFamilyAdmin(familyId) && incoming().role == 'MEMBER' && incoming().inviteCodeUsed == familyDoc(familyId).inviteCode)
+                         );
+
+        allow update: if isValidId(familyId) &&
+                         isValidId(memberUid) &&
+                         isOwner(memberUid) &&
+                         isFamilyMember(familyId) &&
+                         isValidFamilyMember(incoming(), familyId, memberUid) &&
+                         incoming().role == existing().role &&
+                         incoming().inviteCodeUsed == existing().inviteCodeUsed &&
+                         incoming().joinedAtMillis == existing().joinedAtMillis &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoUrl', 'updatedAt']);
+
+        allow delete: if isValidId(familyId) &&
+                         isValidId(memberUid) &&
+                         (isOwner(memberUid) || isFamilyAdmin(familyId));
+      }
+
+      match /sharedRecords/{shareId} {
+        allow get, list: if isValidId(familyId) && isFamilyMember(familyId);
+
+        allow create: if isValidId(familyId) &&
+                         isValidId(shareId) &&
+                         isFamilyMember(familyId) &&
+                         incoming().keys().hasAll([
+                           'familyId', 'ownerUid', 'ownerName', 'recordType', 'sourceRecordId',
+                           'title', 'brand', 'merchantOrBatch', 'category', 'invoiceNumber',
+                           'importanceLevel', 'claimStatus', 'sharedAtMillis', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'familyId', 'ownerUid', 'ownerName', 'recordType', 'sourceRecordId',
+                           'title', 'brand', 'merchantOrBatch', 'category', 'priceInr',
+                           'purchaseDateMillis', 'returnDeadlineMillis', 'warrantyDurationMonths',
+                           'warrantyExpiryMillis', 'medicineExpiryMillis', 'quantity',
+                           'storageNote', 'notes', 'invoiceNumber', 'importanceLevel',
+                           'claimStatus', 'sharedAtMillis', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().ownerUid == request.auth.uid &&
+                         isValidSharedRecord(incoming(), familyId);
+
+        allow update: if isValidId(familyId) &&
+                         isValidId(shareId) &&
+                         isFamilyMember(familyId) &&
+                         existing().ownerUid == request.auth.uid &&
+                         incoming().ownerUid == existing().ownerUid &&
+                         incoming().familyId == existing().familyId &&
+                         incoming().recordType == existing().recordType &&
+                         incoming().sourceRecordId == existing().sourceRecordId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidSharedRecord(incoming(), familyId);
+
+        allow delete: if isValidId(familyId) &&
+                         isValidId(shareId) &&
+                         isFamilyMember(familyId) &&
+                         (existing().ownerUid == request.auth.uid || isFamilyAdmin(familyId));
+      }
+    }
+  }
+}

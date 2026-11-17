@@ -1,0 +1,6 @@
+{
+  "name": "VAULTORA",
+  "description": "Intelligent personal digital vault for managing purchase receipts, warranties, returns, and medicine expiry dates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

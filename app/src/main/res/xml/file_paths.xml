@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path name="vaultora_camera_cache" path="camera/" />
+    <files-path name="vaultora_attachments" path="vault_files/" />
+    <cache-path name="vaultora_exports" path="exports/" />
+</paths>

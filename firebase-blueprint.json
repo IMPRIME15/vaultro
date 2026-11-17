@@ -1,0 +1,480 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile, reminder preferences, family membership metadata, and app settings stored per user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the vault owner."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Display name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address."
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "Optional profile avatar URL."
+        },
+        "themePreference": {
+          "type": "string",
+          "enum": ["DARK", "LIGHT", "SYSTEM"],
+          "description": "App appearance preference."
+        },
+        "purchaseRemindersEnabled": {
+          "type": "boolean",
+          "description": "Whether purchase return and warranty alerts are enabled."
+        },
+        "medicineRemindersEnabled": {
+          "type": "boolean",
+          "description": "Whether medicine expiry alerts are enabled."
+        },
+        "returnReminderDaysBefore": {
+          "type": "integer",
+          "description": "Days before return deadline to surface alerts."
+        },
+        "warrantyReminderDaysBefore": {
+          "type": "integer",
+          "description": "Days before warranty expiry to surface alerts."
+        },
+        "medicineReminderDaysBefore": {
+          "type": "integer",
+          "description": "Days before medicine expiry to surface alerts."
+        },
+        "appLockEnabled": {
+          "type": "boolean",
+          "description": "Whether privacy lock shield is toggled on."
+        },
+        "seededSampleData": {
+          "type": "boolean",
+          "description": "Tracks whether initial realistic sample vault records were populated."
+        },
+        "priorityCriticalAlertsEnabled": {
+          "type": "boolean",
+          "description": "Whether individual critical priority alerts are enabled."
+        },
+        "priorityHighAlertsEnabled": {
+          "type": "boolean",
+          "description": "Whether high priority reminders are enabled."
+        },
+        "priorityMediumDigestEnabled": {
+          "type": "boolean",
+          "description": "Whether throttled grouped medium-priority digests are enabled."
+        },
+        "priorityLowMuted": {
+          "type": "boolean",
+          "description": "Whether low-priority notifications are suppressed."
+        },
+        "familyId": {
+          "type": "string",
+          "description": "Optional active Family Vault identifier."
+        },
+        "familyRole": {
+          "type": "string",
+          "enum": ["ADMIN", "MEMBER"],
+          "description": "Optional role inside the user's Family Vault."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "fullName",
+        "email",
+        "themePreference",
+        "purchaseRemindersEnabled",
+        "medicineRemindersEnabled",
+        "returnReminderDaysBefore",
+        "warrantyReminderDaysBefore",
+        "medicineReminderDaysBefore",
+        "appLockEnabled",
+        "seededSampleData",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PurchaseRecord": {
+      "title": "PurchaseRecord",
+      "description": "Purchase invoice, receipt metadata, return deadline, warranty tracking, and manual warranty claim tracking entry.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase UID."
+        },
+        "productName": {
+          "type": "string",
+          "description": "Product name."
+        },
+        "brand": {
+          "type": "string",
+          "description": "Optional brand or manufacturer name."
+        },
+        "merchantName": {
+          "type": "string",
+          "description": "Merchant or store name."
+        },
+        "purchasePriceInr": {
+          "type": "number",
+          "description": "Purchase price in Indian Rupees."
+        },
+        "purchaseDateMillis": {
+          "type": "integer",
+          "description": "Purchase date in UTC epoch milliseconds."
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Invoice or receipt identifier."
+        },
+        "category": {
+          "type": "string",
+          "description": "Purchase category."
+        },
+        "attachmentUri": {
+          "type": "string",
+          "description": "Optional local image or PDF document URI reference."
+        },
+        "attachmentType": {
+          "type": "string",
+          "enum": ["NONE", "IMAGE", "PDF"],
+          "description": "Type of attached invoice document."
+        },
+        "returnDeadlineMillis": {
+          "type": "integer",
+          "description": "Optional return eligibility deadline in epoch milliseconds."
+        },
+        "warrantyDurationMonths": {
+          "type": "integer",
+          "description": "Optional warranty duration in months."
+        },
+        "warrantyExpiryMillis": {
+          "type": "integer",
+          "description": "Optional warranty expiry date in epoch milliseconds."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional purchase notes."
+        },
+        "returnReminderSet": {
+          "type": "boolean",
+          "description": "Whether return deadline reminder is active."
+        },
+        "warrantyReminderSet": {
+          "type": "boolean",
+          "description": "Whether warranty expiry reminder is active."
+        },
+        "importanceLevel": {
+          "type": "string",
+          "enum": ["", "AUTO", "CRITICAL", "HIGH", "MEDIUM", "LOW"],
+          "description": "Optional explicit user importance level; blank uses automated SPE inference."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the purchase task/deadline is completed and archived from active priority."
+        },
+        "completedAtMillis": {
+          "type": "integer",
+          "description": "Optional epoch timestamp when marked completed."
+        },
+        "warrantyClaimActive": {
+          "type": "boolean",
+          "description": "Whether a warranty claim follow-up is active."
+        },
+        "warrantyClaimFollowUpMillis": {
+          "type": "integer",
+          "description": "Optional warranty claim follow-up target date in epoch milliseconds."
+        },
+        "claimStatus": {
+          "type": "string",
+          "enum": ["NOT_SUBMITTED", "SUBMITTED", "UNDER_REVIEW", "RESOLVED", "REJECTED"],
+          "description": "Manual warranty claim tracking status updated by the user."
+        },
+        "claimNotes": {
+          "type": "string",
+          "description": "Optional user notes on warranty claim progress or support ticket references."
+        },
+        "claimIssueSummary": {
+          "type": "string",
+          "description": "Optional summary of product issue used for warranty claim preparation."
+        },
+        "claimUpdatedAtMillis": {
+          "type": "integer",
+          "description": "Optional epoch timestamp when claim status or notes were updated."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "productName",
+        "merchantName",
+        "purchasePriceInr",
+        "purchaseDateMillis",
+        "invoiceNumber",
+        "category",
+        "attachmentType",
+        "returnReminderSet",
+        "warrantyReminderSet",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MedicineRecord": {
+      "title": "MedicineRecord",
+      "description": "Medicine storage record for batch and expiry tracking only.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase UID."
+        },
+        "medicineName": {
+          "type": "string",
+          "description": "Medicine name."
+        },
+        "batchNumber": {
+          "type": "string",
+          "description": "Batch or lot identifier."
+        },
+        "expiryDateMillis": {
+          "type": "integer",
+          "description": "Expiry date in epoch milliseconds."
+        },
+        "purchaseDateMillis": {
+          "type": "integer",
+          "description": "Optional purchase date in epoch milliseconds."
+        },
+        "quantity": {
+          "type": "string",
+          "description": "Optional stored quantity description."
+        },
+        "photoUri": {
+          "type": "string",
+          "description": "Optional medicine photo URI reference."
+        },
+        "storageNote": {
+          "type": "string",
+          "description": "Optional storage condition note."
+        },
+        "reminderEnabled": {
+          "type": "boolean",
+          "description": "Whether expiry reminder is enabled."
+        },
+        "reminderDaysBefore": {
+          "type": "integer",
+          "description": "Reminder lead time in days."
+        },
+        "importanceLevel": {
+          "type": "string",
+          "enum": ["", "AUTO", "CRITICAL", "HIGH", "MEDIUM", "LOW"],
+          "description": "Optional explicit user importance level; blank uses automated SPE inference."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the medicine record has been resolved/disposed and archived from active priority."
+        },
+        "completedAtMillis": {
+          "type": "integer",
+          "description": "Optional epoch timestamp when marked completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "medicineName",
+        "batchNumber",
+        "expiryDateMillis",
+        "reminderEnabled",
+        "reminderDaysBefore",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "NotificationState": {
+      "title": "NotificationState",
+      "description": "Persistent read/unread state for a computed purchase or medicine alert.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase UID."
+        },
+        "alertKey": {
+          "type": "string",
+          "description": "Deterministic alert key matching document ID."
+        },
+        "readFlag": {
+          "type": "boolean",
+          "description": "Whether the alert has been marked as read."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "alertKey",
+        "readFlag",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FamilyInvite": {
+      "title": "FamilyInvite",
+      "description": "Invitation code lookup mapping a secure invite code to a Family Vault.",
+      "type": "object",
+      "properties": {
+        "inviteCode": { "type": "string" },
+        "familyId": { "type": "string" },
+        "familyName": { "type": "string" },
+        "createdByUid": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["inviteCode", "familyId", "familyName", "createdByUid", "active", "createdAt", "updatedAt"]
+    },
+    "FamilyGroup": {
+      "title": "FamilyGroup",
+      "description": "Family Vault container holding group name, active invite code, admin UID, and member UID list.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "adminUid": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "memberUids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "adminUid", "inviteCode", "memberUids", "createdAt", "updatedAt"]
+    },
+    "FamilyMember": {
+      "title": "FamilyMember",
+      "description": "Registered member profile inside a Family Vault with Admin or Member role.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string" },
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "role": { "type": "string", "enum": ["ADMIN", "MEMBER"] },
+        "inviteCodeUsed": { "type": "string" },
+        "joinedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["familyId", "userId", "displayName", "email", "role", "inviteCodeUsed", "joinedAtMillis", "createdAt", "updatedAt"]
+    },
+    "SharedVaultRecord": {
+      "title": "SharedVaultRecord",
+      "description": "Explicitly shared copy of a Purchase or Medicine record accessible only to verified Family Vault members.",
+      "type": "object",
+      "properties": {
+        "familyId": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "recordType": { "type": "string", "enum": ["PURCHASE", "MEDICINE"] },
+        "sourceRecordId": { "type": "string" },
+        "title": { "type": "string" },
+        "brand": { "type": "string" },
+        "merchantOrBatch": { "type": "string" },
+        "category": { "type": "string" },
+        "priceInr": { "type": "number" },
+        "purchaseDateMillis": { "type": "integer" },
+        "returnDeadlineMillis": { "type": "integer" },
+        "warrantyDurationMonths": { "type": "integer" },
+        "warrantyExpiryMillis": { "type": "integer" },
+        "medicineExpiryMillis": { "type": "integer" },
+        "quantity": { "type": "string" },
+        "storageNote": { "type": "string" },
+        "notes": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "importanceLevel": { "type": "string", "enum": ["", "AUTO", "CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+        "claimStatus": { "type": "string", "enum": ["NOT_SUBMITTED", "SUBMITTED", "UNDER_REVIEW", "RESOLVED", "REJECTED"] },
+        "sharedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "familyId", "ownerUid", "ownerName", "recordType", "sourceRecordId",
+        "title", "brand", "merchantOrBatch", "category", "invoiceNumber",
+        "importanceLevel", "claimStatus", "sharedAtMillis", "createdAt", "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Per-user profile and VAULTORA preferences."
+    },
+    "/users/{userId}/purchases/{purchaseId}": {
+      "schema": { "$ref": "#/entities/PurchaseRecord" },
+      "description": "Purchase Vault receipts, invoices, return deadlines, warranties, and claim tracking."
+    },
+    "/users/{userId}/medicines/{medicineId}": {
+      "schema": { "$ref": "#/entities/MedicineRecord" },
+      "description": "Medicine Vault stored medicines and expiry records."
+    },
+    "/users/{userId}/notificationStates/{alertKey}": {
+      "schema": { "$ref": "#/entities/NotificationState" },
+      "description": "Read status tracking for Purchase and Medicine alerts."
+    },
+    "/familyInvites/{inviteCode}": {
+      "schema": { "$ref": "#/entities/FamilyInvite" },
+      "description": "Secure invitation code lookup records (get by exact code only, never listable)."
+    },
+    "/families/{familyId}": {
+      "schema": { "$ref": "#/entities/FamilyGroup" },
+      "description": "Family Vault group document readable only by listed members."
+    },
+    "/families/{familyId}/members/{memberUid}": {
+      "schema": { "$ref": "#/entities/FamilyMember" },
+      "description": "Member directory and roles within a Family Vault."
+    },
+    "/families/{familyId}/sharedRecords/{shareId}": {
+      "schema": { "$ref": "#/entities/SharedVaultRecord" },
+      "description": "Records explicitly shared by owners into their Family Vault."
+    }
+  }
+}
